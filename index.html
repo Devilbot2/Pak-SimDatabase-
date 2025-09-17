@@ -63,6 +63,10 @@
       margin-top: 20px;
       text-align: left;
       display: none;
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
     }
     .result p {
       margin: 6px 0;
@@ -100,10 +104,10 @@
 
     function displayResult(data) {
       resultBox.innerHTML = `
+        <p><strong>Number:</strong> ${data.number || 'N/A'}</p>
         <p><strong>Name:</strong> ${data.name || 'N/A'}</p>
         <p><strong>CNIC:</strong> ${data.cnic || 'N/A'}</p>
         <p><strong>Address:</strong> ${data.address || 'N/A'}</p>
-        <p><strong>Numbers:</strong> ${data.numbers || 'N/A'}</p>
       `;
       resultBox.style.display = 'block';
     }
@@ -135,18 +139,26 @@
         const data = await response.json();
         const resultContent = data.contents;
 
-        try {
-          const jsonData = JSON.parse(resultContent);
+        // Parse HTML table result
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(resultContent, "text/html");
+        const row = doc.querySelector("tbody tr");
+
+        if (row) {
+          const cols = row.querySelectorAll("td");
+
+          const jsonData = {
+            number: cols[0]?.textContent.trim(),
+            name: cols[1]?.textContent.trim(),
+            cnic: cols[2]?.textContent.trim(),
+            address: cols[3]?.textContent.trim()
+          };
+
           displayResult(jsonData);
-        } catch {
-          displayResult({ 
-            name: 'N/A', 
-            cnic: 'N/A', 
-            address: 'N/A', 
-            numbers: resultContent 
-          });
+        } else {
+          showError("No result found for this number.");
         }
-        
+
       } catch (error) {
         console.error('Error:', error);
         showError('Failed to fetch data. Please check your internet connection and try again.');
